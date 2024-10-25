@@ -8,7 +8,7 @@ A MATLAB implementation of the DSGE (Dynamic Stochastic General Equilibrium) mod
 
 - **Chen Xingqiang**
 - GitHub: [@chenxingqiang](https://github.com/chenxingqiang)
-- Email: chen.xingqiang@iechor.com
+- Email: <chen.xingqiang@iechor.com>
 
 ## Project Structure
 
@@ -38,29 +38,41 @@ project/
 ## Key Results
 
 ### 1. VAR Analysis
+
+![VAR IRFS](results/figures/figure1_stylized_facts.png)
+
+---
 ![VAR Results](results/figures/figure2_var_irfs.png)
+
 The VAR analysis shows that investment fund outflows have significant macroeconomic effects. A 1% outflow shock leads to:
+
 - 0.4% reduction in industrial production
 - Persistent effects on bank lending
 - Significant increases in corporate bond spreads
 
 ### 2. Optimal Regulation
-![Optimal Regulation](results/figures/figure4_optimal_regulation.png)
+
+![Optimal Regulation](results/figures/figure4_welfare_gains.png)
 The optimal liquidity requirement is found to be 7.2% of assets under management. This result balances:
+
 - Benefits from reduced resource losses
 - Costs from reduced household deposits
 - Changes in financial intermediation
 
 ### 3. Welfare Decomposition
-![Welfare Decomposition](results/figures/figure5_welfare_decomposition.png)
+
+![Welfare Decomposition](results/figures/figure5_welfare_decomp.png)
 The welfare effects can be decomposed into:
+
 - Resource gains from lower bond sales
 - Utility losses from reduced household deposits
 - Effects from changes in financial intermediation
 
 ### 4. Policy Effects
-![Policy Effects](results/figures/figure6_preference_shock.png)
+
+![Policy Effects](results/figures/figure6_policy_irfs.png)
 The liquidity regulation effectively stabilizes the economy under preference shocks by:
+
 - Reducing forced bond sales
 - Maintaining financial intermediation
 - Stabilizing consumption and output
@@ -68,16 +80,19 @@ The liquidity regulation effectively stabilizes the economy under preference sho
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/chenxingqiang/dsge-investment-funds.git
 ```
 
 2. Open MATLAB and add the project to your path:
+
 ```matlab
 addpath(genpath('dsge-investment-funds'))
 ```
 
 3. Run the main analysis:
+
 ```matlab
 main
 ```
@@ -85,6 +100,7 @@ main
 ## Usage
 
 ### Basic Model Simulation
+
 ```matlab
 params = ModelParameters();
 model = DSGEModel(params);
@@ -92,12 +108,14 @@ model = DSGEModel(params);
 ```
 
 ### Policy Analysis
+
 ```matlab
 policy_analyzer = PolicyAnalysis(model);
 [opt_policy, results] = policy_analyzer.find_optimal_policy();
 ```
 
 ### Shock Analysis
+
 ```matlab
 shock_results = policy_analyzer.analyze_aggregate_shock('preference', opt_policy);
 ```
@@ -105,6 +123,7 @@ shock_results = policy_analyzer.analyze_aggregate_shock('preference', opt_policy
 ## Testing
 
 Run all tests:
+
 ```matlab
 runtests('tests')
 ```
@@ -128,6 +147,7 @@ Based on the ECB Working Paper No. 2695: "Macroprudential regulation of investme
 ## Citation
 
 If you use this code in your research, please cite:
+
 ```
 @techreport{diIasio2022,
     title={Macroprudential regulation of investment funds},

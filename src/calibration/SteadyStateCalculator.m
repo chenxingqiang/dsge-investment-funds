@@ -4,7 +4,7 @@ classdef SteadyStateCalculator
     
     properties
         params
-        tol = 1e-6    % Convergence tolerance
+        tol = 1e-5    % Convergence tolerance
         max_iter = 1000 % Maximum iterations
     end
     

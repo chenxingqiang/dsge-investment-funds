@@ -1,0 +1,200 @@
+%% Main script for DSGE model analysis with investment funds
+% Author: Chen Xingqiang
+% Date: 2024
+
+clear all;
+close all;
+clc;
+
+%% Setup paths and environment
+% Add Dynare path (modify according to your installation)
+addpath('dynare-6.0/matlab');
+
+% Add model paths
+addpath('steady_state');
+addpath('simulations');
+addpath('results');
+
+% Create results directory if it doesn't exist
+if ~exist('results/figures', 'dir')
+    mkdir('results/figures');
+end
+
+try
+
+    % Verify all required files exist
+    required_files = {
+        'dsge_investment_funds.mod',
+        'params_calibration.m',
+        fullfile('steady_state', 'dsge_investment_funds_ss.m'),
+        fullfile('simulations', 'policy_experiments.m'),
+        fullfile('simulations', 'shock_analysis.m'),
+        fullfile('results', 'plot_results.m')
+        };
+
+    for i = 1:length(required_files)
+        if ~exist(required_files{i}, 'file')
+            error('Required file missing: %s', required_files{i});
+        end
+    end
+
+    % Verify Dynare installation
+    [status, result] = system('dynare --version');
+    if status ~= 0
+        error('Dynare command line tools not found. Please check installation.');
+    else
+        fprintf('Found Dynare: %s\n', result);
+    end
+
+
+%% 1. Run baseline model
+fprintf('\nRunning baseline model...\n');
+dynare dsge_investment_funds.mod noclearall;
+
+% Store baseline results
+baseline.ss = oo_.steady_state;
+baseline.irfs = oo_.irfs;
+baseline.moments = oo_.var;
+
+%% 2. Run policy experiments
+fprintf('\nRunning policy experiments...\n');
+
+% Define grid for liquidity requirement
+rho_grid = linspace(0.02, 0.14, 50);
+policy_results = struct();
+
+for i = 1:length(rho_grid)
+    fprintf('Analyzing policy ρ = %.2f%%...\n', 100*rho_grid(i));
+
+    % Update policy parameter
+    set_param_value('liquidity_ratio', rho_grid(i));
+
+    % Run model with new policy
+    dynare dsge_investment_funds.mod noclearall;
+
+    % Store results
+    policy_results(i).rho = rho_grid(i);
+    policy_results(i).ss = oo_.steady_state;
+    policy_results(i).irfs = oo_.irfs;
+    policy_results(i).welfare = compute_welfare(oo_.steady_state, M_.params);
+end
+
+%% 3. Run shock analysis
+fprintf('\nAnalyzing shocks...\n');
+
+% Deposit preference shock
+set_param_value('sig_d', 0.01);
+dynare dsge_investment_funds.mod noclearall;
+shock_results.deposit = oo_.irfs;
+
+% Technology shock
+set_param_value('sig_a', 0.01);
+dynare dsge_investment_funds.mod noclearall;
+shock_results.tech = oo_.irfs;
+
+%% 4. Generate plots
+fprintf('\nGenerating plots...\n');
+
+% Figure 1: Stylized Facts (not from model)
+generate_stylized_facts();
+saveas(gcf, 'results/figures/figure1_stylized_facts.png');
+
+% Figure 2: VAR IRFs (not from model)
+generate_var_irfs();
+saveas(gcf, 'results/figures/figure2_var_irfs.png');
+
+% Figure 4: Welfare Gains
+plot_welfare_gains(policy_results);
+saveas(gcf, 'results/figures/figure4_welfare_gains.png');
+
+% Figure 5: Welfare Decomposition
+plot_welfare_decomposition(policy_results);
+saveas(gcf, 'results/figures/figure5_welfare_decomp.png');
+
+% Figure 6: Policy IRFs
+plot_policy_irfs(baseline.irfs, policy_results(25).irfs); % middle point of grid
+saveas(gcf, 'results/figures/figure6_policy_irfs.png');
+
+%% 5. Save results
+fprintf('\nSaving results...\n');
+save('results/baseline_results.mat', 'baseline');
+save('results/policy_results.mat', 'policy_results');
+save('results/shock_results.mat', 'shock_results');
+
+% Generate summary report
+generate_report(baseline, policy_results, shock_results);
+
+fprintf('\nAnalysis completed successfully!\n');
+
+catch ME
+    % Log error details
+    error_file = 'error_log.txt';
+    fid = fopen(error_file, 'a');
+    fprintf(fid, '\n\nError occurred at %s\n', datestr(now));
+    fprintf(fid, 'Error message: %s\n', ME.message);
+    fprintf(fid, 'Error stack trace:\n');
+    for i = 1:length(ME.stack)
+        fprintf(fid, '\tFile: %s\n\tLine: %d\n\tFunction: %s\n', ...
+            ME.stack(i).file, ME.stack(i).line, ME.stack(i).name);
+    end
+    fclose(fid);
+
+
+    % Display error to user
+    fprintf('\nError occurred. Details have been saved to %s\n', error_file);
+    fprintf('Error message: %s\n', ME.message);
+    rethrow(ME);
+end
+
+    
+
+    % Helper functions
+    function welfare = compute_welfare(ss, params)
+    % Compute welfare based on steady state values
+    c = ss(2); % consumption index in steady state vector
+    n = ss(3); % labor index in steady state vector
+    d = ss(14); % deposits index in steady state vector
+
+    % Compute lifetime utility
+    utility = c^(1-params.sigma)/(1-params.sigma) + ...
+        params.delta_d * d^(1-params.sigma_d)/(1-params.sigma_d) - ...
+        params.psi_n * n^(1+params.sigma_n)/(1+params.sigma_n);
+
+    welfare = utility/(1-params.beta);
+    end
+
+    function generate_report(baseline, policy_results, shock_results)
+    % Create summary report in text file
+    fid = fopen('results/analysis_report.txt', 'w');
+
+    % Write header
+    fprintf(fid, 'DSGE Model Analysis Report\n');
+    fprintf(fid, '========================\n\n');
+
+    % Baseline results
+    fprintf(fid, '1. Baseline Steady State\n');
+    fprintf(fid, '-----------------------\n');
+    fprintf(fid, 'Output: %.4f\n', baseline.ss(1));
+    fprintf(fid, 'Consumption: %.4f\n', baseline.ss(2));
+    fprintf(fid, 'Investment: %.4f\n', baseline.ss(6));
+    fprintf(fid, '\n');
+
+    % Policy analysis
+    fprintf(fid, '2. Policy Analysis\n');
+    fprintf(fid, '----------------\n');
+    [max_welfare, max_idx] = max([policy_results.welfare]);
+    optimal_rho = policy_results(max_idx).rho;
+    fprintf(fid, 'Optimal liquidity requirement: %.1f%%\n', 100*optimal_rho);
+    fprintf(fid, 'Maximum welfare gain: %.4f%%\n', 100*(max_welfare - baseline.welfare));
+    fprintf(fid, '\n');
+
+    % Shock analysis
+    fprintf(fid, '3. Shock Analysis\n');
+    fprintf(fid, '---------------\n');
+    fprintf(fid, 'Maximum output response to deposit shock: %.4f%%\n', ...
+        100*min(shock_results.deposit.y_eps_d));
+    fprintf(fid, 'Maximum output response to tech shock: %.4f%%\n', ...
+        100*max(shock_results.tech.y_eps_a));
+
+    fclose(fid);
+    end

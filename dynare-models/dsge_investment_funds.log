@@ -1,0 +1,6 @@
+Starting Dynare (version 6.2).
+Calling Dynare with arguments: noclearall
+Starting preprocessing of the model file ...
+ERROR: steady_state/dsge_investment_funds_ss.m: line 7, cols 1-14: Unknown symbol: K_Y_ratio.
+If referenced from the 'initval', 'endval', 'histval', or 'shocks' block, you can pass the 'nostrict' option to dynare to have this line ignored.
+Preprocessing time: 0h00m00s.

@@ -17,4 +17,4 @@ shock_var = 4; % Fund flow shock (4th variable)
 var_model.plot_irf(horizon, shock_var, 0.68);
 
 % Save results
-saveas(gcf, 'results/figures/var_irf.png');
+saveas(gcf, 'results/figures/example_var_irf.png');

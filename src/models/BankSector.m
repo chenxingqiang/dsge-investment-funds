@@ -1,13 +1,6 @@
 classdef BankSector
-    % BankSector - Banking sector implementation
-    % Based on Section 3.2.1 of the paper
-    
     properties
-        params      % Model parameters
-        loans       % Bank loans
-        deposits    % Total deposits
-        i_l         % Loan rate
-        i_d         % Deposit rate
+        params
     end
     
     methods
@@ -15,22 +8,25 @@ classdef BankSector
             obj.params = params;
         end
         
-        function obj = optimize(obj)
-            % Bank optimization based on equations (7)
-            % In baseline model, loan rate equals deposit rate
-            obj.i_l = obj.i_d;
-        end
-        
-        function obj = update_balance_sheet(obj, d_hh, d_if)
-            % Update bank balance sheet
-            % Equations (35)-(36)
-            obj.deposits = d_hh + d_if;
-            obj.loans = obj.deposits;  % Balance sheet constraint
-        end
-        
-        function profit = compute_profits(obj)
-            % Compute bank profits
-            profit = obj.i_l * obj.loans - obj.i_d * obj.deposits;
+        function [i_l, l, d] = compute_ss(obj, i_d, d_hh, d_if)
+            try
+                fprintf('Computing bank sector steady state...\n');
+                
+                % Loan rate equals deposit rate (equation 7)
+                i_l = i_d;
+                
+                % Balance sheet constraint
+                d = d_hh + d_if;
+                l = d;
+                
+                fprintf('Bank sector SS computed successfully.\n');
+                fprintf('i_l: %.4f, l: %.4f, d: %.4f\n', i_l, l, d);
+                
+            catch ME
+                fprintf('Error in bank sector SS: %s\n', ME.message);
+                i_l = NaN; l = NaN; d = NaN;
+                rethrow(ME);
+            end
         end
     end
 end

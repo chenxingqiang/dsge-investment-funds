@@ -1,25 +1,6 @@
 classdef ProductionSector
-    % ProductionSector - Production sector implementation
-    % Includes entrepreneurs, intermediate and final good producers
-    
     properties
-        params          % Model parameters
-        % Entrepreneur variables
-        K_b             % Bond-financed capital
-        K_l             % Loan-financed capital
-        % Production variables
-        Y               % Final output
-        z               % Intermediate good
-        z_b             % Bond-financed input
-        z_l             % Loan-financed input
-        n               % Labor input
-        % Prices
-        w               % Wage
-        p_z             % Intermediate good price
-        p_b             % Bond-financed good price
-        p_l             % Loan-financed good price
-        q_k_b           % Bond-financed capital price
-        q_k_l           % Loan-financed capital price
+        params
     end
     
     methods
@@ -27,73 +8,56 @@ classdef ProductionSector
             obj.params = params;
         end
         
-        function obj = optimize_entrepreneurs(obj, i_l, q_b)
-            % Optimize entrepreneur decisions
-            % Based on equations (44)-(49)
-            
-            % Bond-financed entrepreneurs
-            obj = obj.optimize_bond_entrepreneurs(q_b);
-            
-            % Loan-financed entrepreneurs
-            obj = obj.optimize_loan_entrepreneurs(i_l);
-        end
-        
-        function obj = optimize_intermediate(obj)
-            % Optimize intermediate good production
-            % Based on equations (50)-(52)
-            
-            % CES production function
-            obj.z = (obj.params.v * obj.z_l^obj.params.epsilon + ...
-                    (1-obj.params.v) * obj.z_b^obj.params.epsilon)^(1/obj.params.epsilon);
-            
-            % Input demands
-            obj.z_l = (obj.params.v * obj.p_z/obj.p_l)^(1/(1-obj.params.epsilon)) * obj.z;
-            obj.z_b = ((1-obj.params.v) * obj.p_z/obj.p_b)^(1/(1-obj.params.epsilon)) * obj.z;
-        end
-        
-        function obj = optimize_final(obj, A)
-            % Optimize final good production
-            % Based on equations (57)-(59)
-            
-            % Production function
-            obj.Y = A * obj.n^obj.params.alpha * obj.z^(1-obj.params.alpha);
-            
-            % Factor prices
-            obj.w = obj.params.alpha * obj.Y/obj.n;
-            obj.p_z = (1-obj.params.alpha) * obj.Y/obj.z;
-        end
-        
-        function obj = optimize_capital_producers(obj)
-            % Optimize capital good production
-            % Based on equations (53)-(56)
-            
-            % Update capital stocks with investment and adjustment costs
-            obj = obj.update_capital_stock('bond');
-            obj = obj.update_capital_stock('loan');
-        end
-    end
-    
-    methods(Access = private)
-        function obj = optimize_bond_entrepreneurs(obj, q_b)
-            % Bond-financed entrepreneurs optimization
-            obj.z_b = obj.K_b^obj.params.gamma;
-            % Additional optimization equations...
-        end
-        
-        function obj = optimize_loan_entrepreneurs(obj, i_l)
-            % Loan-financed entrepreneurs optimization
-            obj.z_l = obj.K_l^obj.params.gamma;
-            % Additional optimization equations...
-        end
-        
-        function obj = update_capital_stock(obj, type)
-            % Update capital stock with investment adjustment costs
-            if strcmp(type, 'bond')
-                % Update K_b
-                % Implementation of equation (53)
-            else
-                % Update K_l
-                % Implementation of equation (55)
+        function [Y, K_b, K_l, w, z, K_total] = compute_ss(obj, n, A)
+            try
+                fprintf('Computing production sector steady state...\n');
+                
+                % Parameters
+                alpha = obj.params.alpha;
+                K_Y_ratio = obj.params.K_Y_ratio;
+                
+                % Calculate Y using the rearranged production function
+                term = A * K_Y_ratio^alpha * n^(1 - alpha);
+                Y = term^(1 / (1 - alpha));
+                
+                % Calculate total capital
+                K_total = K_Y_ratio * Y;
+                
+                % Calculate wage
+                w = (1 - alpha) * Y / n;
+                
+                % Split capital
+                K_b = obj.params.B_K_ratio * K_total;
+                K_l = K_total - K_b;
+                
+                % Calculate intermediate goods production z
+                % Ensure that gamma, v, and epsilon are properly defined in params
+                gamma = obj.params.gamma;
+                v = obj.params.v;
+                epsilon = obj.params.epsilon;
+                
+                % Compute z_l and z_b
+                z_l = K_l^gamma;
+                z_b = K_b^gamma;
+                
+                % Compute z using the aggregator
+                z = (v * z_l^epsilon + (1 - v) * z_b^epsilon)^(1 / epsilon);
+                
+                % Print outputs
+                fprintf('\nProduction Sector Values:\n');
+                fprintf('Output (Y):      %.4f\n', Y);
+                fprintf('Capital ratio:   %.4f\n', K_total / Y);
+                fprintf('Bond ratio:      %.4f\n', K_b / K_total);
+                fprintf('Labor share:     %.4f\n', w * n / Y);
+                fprintf('Capital split:\n');
+                fprintf('  Bond-financed: %.4f\n', K_b);
+                fprintf('  Loan-financed: %.4f\n', K_l);
+                fprintf('  Total:         %.4f\n', K_total);
+                
+            catch ME
+                fprintf('Error in production sector SS: %s\n', ME.message);
+                Y = NaN; K_b = NaN; K_l = NaN; w = NaN; z = NaN; K_total = NaN;
+                rethrow(ME);
             end
         end
     end

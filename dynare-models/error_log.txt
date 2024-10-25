@@ -1,0 +1,32 @@
+
+
+Error occurred at 25-Oct-2024 15:41:46
+Error message: Dynare command line tools not found. Please check installation.
+Error stack trace:
+	File: /Users/xingqiangchen/TASK/dsge-investment-funds/dynare-models/main.m
+	Line: 44
+	Function: main
+
+
+Error occurred at 25-Oct-2024 15:42:34
+Error message: Dynare command line tools not found. Please check installation.
+Error stack trace:
+	File: /Users/xingqiangchen/TASK/dsge-investment-funds/dynare-models/main.m
+	Line: 42
+	Function: main
+
+
+Error occurred at 25-Oct-2024 15:50:00
+Error message: Dynare command line tools not found. Please check installation.
+Error stack trace:
+	File: /Users/xingqiangchen/TASK/dsge-investment-funds/dynare-models/main.m
+	Line: 42
+	Function: main
+
+
+Error occurred at 25-Oct-2024 15:51:18
+Error message: Dynare command line tools not found. Please check installation.
+Error stack trace:
+	File: /Users/xingqiangchen/TASK/dsge-investment-funds/dynare-models/main.m
+	Line: 44
+	Function: main
