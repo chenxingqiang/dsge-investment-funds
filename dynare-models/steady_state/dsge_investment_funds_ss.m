@@ -1,70 +1,86 @@
-% dsge_investment_funds_ss.m
+function [ys_, params_] = dsge_investment_funds_ss()
 
-% 1. Output normalization
-Y = 1; % Normalized output
+% Load parameters
+global M_
 
-% 2. Hardcoded steady-state ratios and capital calculations
-K_Y_ratio = 5;    % Steady-state capital-output ratio
-B_K_ratio = 0.1;  % Steady-state bond-capital ratio
+% Output normalization
+Y = 1;
+
+% Capital ratios
+K_Y_ratio = 5.0;
+B_K_ratio = 0.10;
 K = K_Y_ratio * Y;
 K_b = B_K_ratio * K;
 K_l = K - K_b;
 
-% 3. Hardcoded interest rate based on a given beta
-beta = 0.98;           % Discount factor
-R = 1 / beta - 1;      % Interest rate calculation
-
-% 4. Bond and fund prices
+% Interest rates and prices  
+beta = M_.params(1);
+R = 1/beta - 1;
 Q_b = beta;
-Q_s = Q_b * B_K_ratio + B_K_ratio; % Simplified formula
+Q_s = Q_b * B_K_ratio + B_K_ratio;
 
-% 5. Labor calculation based on production function parameters
-alpha = 0.33; % Labor share parameter
-N = ((1 - alpha) * Y / K^alpha)^(1 / (1 - alpha));
-
-% 6. Wage calculation
+% Labor and wages
+alpha = M_.params(2);
+N = ((1-alpha) * Y / K^alpha)^(1/(1-alpha));
 W = alpha * Y / N;
 
-% 7. Consumption calculation using the resource constraint
-delta = 0.05;     % Depreciation rate
-kappa_hh = 0.01;  % Household bond management cost
-kappa_if = 0.01;  % Fund cost parameter
+% Investment and consumption
+delta = M_.params(3);
+kappa_hh = M_.params(10);
+kappa_if = M_.params(11);
 I = delta * K;
-B_sales = B_K_ratio; % Assume bond sales is a fraction of bond holdings
-C = Y - I - 0.5 * kappa_hh * B_sales^2 - 0.5 * kappa_if * B_sales^2;
+B_sales = B_K_ratio;
+C = Y - I - 0.5*kappa_hh*B_sales^2 - 0.5*kappa_if*B_sales^2;
 
-% 8. Additional variables (fund dividends, deposits, etc.)
-D_hh = 0.05 * Y;         % Placeholder for household deposits
-D_if = 0.03 * Y;         % Placeholder for fund deposits
-DIV_if = 0.02 * Y;       % Placeholder for fund dividends
-B = K_b;                 % Total bonds held in the economy
-L = D_hh + D_if;         % Loans equal deposits (balance sheet constraint)
-Z = Y;                   % Intermediate output (assuming normalized for simplicity)
-Z_b = K_b^alpha;         % Bond-financed intermediate output
-Z_l = K_l^alpha;         % Loan-financed intermediate output
+% Financial variables
+D_Y_ratio = 0.10;
+D_hh = D_Y_ratio * Y;
+D_if = 0.5 * D_Y_ratio * Y;
+DIV_if = 0.02 * Y;
+B = K_b;
+L = D_hh + D_if;
 
-% 9. Populate `ys_` with steady-state values
-ys_ = zeros(20, 1); % Adjust size based on the number of endogenous variables
-ys_(1) = Y;         % Output
-ys_(2) = C;         % Consumption
-ys_(3) = N;         % Labor
-ys_(4) = W;         % Wage
-ys_(5) = R;         % Interest rate
-ys_(6) = I;         % Investment
-ys_(7) = K;         % Total capital
-ys_(8) = K_b;       % Bond-financed capital
-ys_(9) = K_l;       % Loan-financed capital
-ys_(10) = B;        % Total bonds
-ys_(11) = L;        % Loans
-ys_(12) = Q_b;      % Bond price
-ys_(13) = Q_s;      % Fund share price
-ys_(14) = D_hh;     % Household deposits
-ys_(15) = D_if;     % Fund deposits
-ys_(16) = B_sales;  % Bond sales
-ys_(17) = DIV_if;   % Fund dividends
-ys_(18) = Z;        % Intermediate output
-ys_(19) = Z_b;      % Bond-financed intermediate output
-ys_(20) = Z_l;      % Loan-financed intermediate output
+% Production
+Z = Y;
+Z_b = K_b^gamma;
+Z_l = K_l^gamma;
 
-% Check that `ys_` has been filled out for all required variables. Update indices
-% if more variables are added to the `.mod` file.
+% Technology and shocks
+A = 1;
+delta_d = 1;
+lambda_if = 0;
+R_l = R;
+
+% Create steady state vector
+ys_ = zeros(24,1);
+
+% Fill steady state values
+ys_(1) = Y;
+ys_(2) = C;
+ys_(3) = N; 
+ys_(4) = W;
+ys_(5) = R;
+ys_(6) = I;
+ys_(7) = K;
+ys_(8) = K_b;
+ys_(9) = K_l;
+ys_(10) = B;
+ys_(11) = L;
+ys_(12) = Q_b;
+ys_(13) = Q_s;
+ys_(14) = D_hh;
+ys_(15) = D_if;
+ys_(16) = B_sales;
+ys_(17) = DIV_if;
+ys_(18) = Z;
+ys_(19) = Z_b;
+ys_(20) = Z_l;
+ys_(21) = A;
+ys_(22) = delta_d;
+ys_(23) = lambda_if;
+ys_(24) = R_l;
+
+% Return parameters if needed
+params_ = struct();
+
+end

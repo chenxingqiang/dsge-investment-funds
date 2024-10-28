@@ -1,105 +1,153 @@
-// 声明变量
-var 
-    Y           // 产出
-    C           // 消费
-    N           // 劳动
-    W           // 工资
-    R           // 利率
-    I           // 投资
-    K           // 资本存量
-    K_b         // 债券融资的资本
-    K_l         // 贷款融资的资本
-    B           // 债券
-    L           // 贷款
-    Q_b         // 债券价格
-    Q_s         // 基金份额价格
-    D_hh        // 家庭存款
-    D_if        // 基金存款
-    B_sales     // 债券销售
-    DIV_if      // 基金分红
-    Z           // 中间产品
-    Z_b         // 债券融资的中间产品
-    Z_l         // 贷款融资的中间产品
-    A           // 技术冲击
-    delta_d     // 存款偏好冲击
-    lambda_if   // 投资基金相关变量
-    R_l;        // 贷款利率
+// Declare parameters
+parameters
+    beta    // Discount factor
+    alpha   // Labor share
+    delta   // Depreciation rate
+    sigma   // Risk aversion
+    sigma_n // Labor supply elasticity
+    sigma_d // Deposit preference
+    gamma   // Returns to scale
+    v       // Production weight
+    epsilon // Substitution elasticity
+    kappa_hh // Household bond cost
+    kappa_if // Fund cost
+    rho_a   // Technology persistence
+    rho_d   // Preference persistence
+    sig_a   // Technology volatility
+    sig_d   // Preference volatility
+    phi;    // Bond sales parameter
 
-// 声明外生冲击
-varexo 
-    eps_a       // 技术创新
-    eps_d;      // 存款偏好创新
+// Set parameter values
+beta = 0.994;
+alpha = 0.67;
+delta = 0.025;
+sigma = 1;
+sigma_n = 3;
+sigma_d = 1;
+gamma = 0.627;
+v = 0.678;
+epsilon = 0.499;
+kappa_hh = 0.005;
+kappa_if = 0.005;
+rho_a = 0.96;
+rho_d = 0.60;
+sig_a = 0.0054;
+sig_d = 0.001;
+phi = 0.5;
 
-// Declare external function
-external_function(name=f, nargs=3);
+// Declare endogenous variables
+var
+    Y       // Output
+    C       // Consumption
+    N       // Labor
+    W       // Wage
+    R       // Interest rate
+    I       // Investment
+    K       // Capital stock
+    K_b     // Bond-financed capital
+    K_l     // Loan-financed capital
+    B       // Bonds
+    Q_b     // Bond price
+    Q_s     // Fund shares price
+    D_hh    // Household deposits
+    D_if    // Fund deposits
+    B_sales // Bond sales
+    DIV_if  // Fund dividends
+    Z       // Intermediate goods
+    Z_b     // Bond-financed intermediate goods
+    Z_l     // Loan-financed intermediate goods
+    A       // Technology shock
+    delta_d // Deposit preference shock
+    Lambda  // Stochastic discount factor
+    i_d;    // Deposit interest rate
 
-// 声明参数
-parameters 
-    beta        // 贴现因子
-    alpha       // 劳动份额
-    delta       // 折旧率
-    sigma       // 风险厌恶
-    sigma_n     // 劳动供给弹性
-    sigma_d     // 存款偏好参数
-    gamma       // 回报递减参数
-    v           // 生产权重
-    epsilon     // 替代弹性
-    kappa_hh    // 家庭债券管理成本
-    kappa_if    // 基金成本参数
-    rho_a       // 技术冲击持续性
-    rho_d       // 存款偏好冲击持续性
-    sig_a       // 技术冲击标准差
-    sig_d       // 存款偏好冲击标准差
-    phi;        // 债券销售函数参数
+// Declare exogenous shocks
+varexo
+    eps_a,  // Technology innovation
+    eps_d;  // Deposit preference innovation
 
-// 加载参数值
-@#include "params_calibration.m"
+// Declare predetermined variables
+predetermined_variables K K_b K_l B D_if;
 
-// 模型方程
 model;
+    // 1. Households
+    Lambda = beta * (C(+1)/C)^(-sigma); // Stochastic discount factor
+    C^(-sigma) = Lambda * (1 + R); // Euler equation
+    W * N^sigma_n = C^(-sigma); // Labor supply
 
-// 1. 家庭部门
-C^(-sigma) = beta * (C(+1)^(-sigma)) * (1 + R);                      // 欧拉方程
-C^(-sigma) = delta_d * D_hh^(-sigma_d) + beta * C(+1)^(-sigma) * (1 + R);   // 存款需求 
-N^sigma_n = W / C^sigma;                                             // 劳动供给
+    // 2. Asset Demand
+    Q_s = Lambda * (Q_s(+1) + DIV_if(+1)); // Fund share demand
 
-// 2. 投资基金部门
-1 + lambda_if = beta * ((1 + R) + kappa_if * B_sales(+1) / Q_b(+1));  // 存款FOC
-Q_b = beta + lambda_if * Q_b;                                         // 债券FOC
-Q_s * 1 = Q_b * B + D_if;                                             // 资产负债表约束
-B_sales = f(D_if(-1), Q_s(-1), phi);                                  // 债券销售函数
+    // 3. Investment funds
+    1 = Lambda * ((1 + i_d) + kappa_if * B_sales(+1) / Q_b(+1)); // Portfolio choice
+    DIV_if = B(-1) - Q_b * B - D_if + (1 + i_d(-1)) * D_if(-1) - 0.5 * kappa_if * B_sales^2; // Dividends
+    Q_s = Q_b * B + D_if; // Balance sheet constraint
+    B_sales = (phi * Q_s - D_if(-1))/Q_b * (1 + phi * Q_s - D_if(-1))/(2 * phi * Q_s); // Bond sales
 
-// 3. 银行部门
-R_l = R;                                                              // 贷款利率
-L = D_hh + D_if;                                                      // 存款市场出清
+    // 4. Production
+    Y = A * N^alpha * Z^(1 - alpha); // Final goods
+    Z = (v * Z_l^epsilon + (1 - v) * Z_b^epsilon)^(1 / epsilon); // Intermediate aggregation
+    Z_l = K_l^gamma; // Loan production
+    Z_b = K_b^gamma; // Bond production
 
-// 4. 生产部门
-Y = A * N^alpha * Z^(1-alpha);                                        // 最终产品
-Z = (v * Z_l^epsilon + (1-v) * Z_b^epsilon)^(1/epsilon);              // 中间品聚合
-Z_l = K_l^gamma;                                                      // 贷款融资生产
-Z_b = K_b^gamma;                                                      // 债券融资生产
+    // 5. Factor prices
+    W = alpha * Y / N; // Wage
+    R = (1 - alpha) * Y / K - delta; // Interest rate
 
-// 5. 资本累积
-K = (1-delta) * K(-1) + I;                                            // 资本运动方程
-K = K_b + K_l;                                                        // 资本分配
+    // 6. Capital accumulation
+    K = (1 - delta) * K(-1) + I; // Law of motion
+    K = K_b + K_l; // Capital allocation
+    Q_b * K_b = B; // Bond financing constraint
+    K_l = D_hh + D_if; // Loan financing constraint and deposit market
 
-// 6. 市场出清
-Y = C + I + 0.5 * kappa_hh * B_sales^2 + 0.5 * kappa_if * B_sales^2;  // 资源约束
+    // 7. Market clearing
+    Y = C + I + 0.5 * kappa_hh * B_sales^2 + 0.5 * kappa_if * B_sales^2; // Goods market
 
-// 7. 外生冲击过程
-log(A) = rho_a * log(A(-1)) + sig_a * eps_a;                          // 技术冲击
-log(delta_d) = rho_d * log(delta_d(-1)) + sig_d * eps_d;              // 存款偏好冲击
+    // 8. Bond price
+    Q_b = 1 - kappa_hh * B_sales; // Secondary market price
 
+    // 9. Shock processes
+    log(A) = rho_a * log(A(-1)) + sig_a * eps_a; // Technology shock
+    log(delta_d) = rho_d * log(delta_d(-1)) + sig_d * eps_d; // Preference shock
+
+    // 10. Deposit interest rate
+    i_d = R; // Deposit interest rate equals interest rate
 end;
 
-// 初始值
+// Set steady state values
 initval;
-@#include "steady_state/dsge_investment_funds_ss.m"
+    A = 1;
+    delta_d = 1;
+    Y = 1;
+    C = 0.7;
+    N = 0.33;
+    K = 5;
+    I = delta * K;
+    K_b = 0.5;
+    K_l = K - K_b;
+    B = K_b;
+    Q_b = 0.99;
+    D_if = 0.05;
+    D_hh = K_l - D_if; // Since K_l = D_hh + D_if
+    Q_s = Q_b * B + D_if;
+    B_sales = 0.02;
+    DIV_if = 0.02;
+    W = alpha * Y / N;
+    R = (1 - alpha) * Y / K - delta;
+    Z_l = K_l^gamma;
+    Z_b = K_b^gamma;
+    Z = (v * Z_l^epsilon + (1 - v) * Z_b^epsilon)^(1 / epsilon);
+    Lambda = beta;
+    i_d = R; // Deposit interest rate equals interest rate
 end;
 
-// 线性化处理
+// Check steady state
 steady;
 check;
 
-// 求解模型
-stoch_simul(order=2, irf=20);
+// Simulate model
+stoch_simul(order=2, irf=40,
+    periods=10000,
+    drop=1000,
+    hp_filter=1600,
+    irf_shocks=(eps_a,eps_d));

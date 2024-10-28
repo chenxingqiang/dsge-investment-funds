@@ -1,24 +1,27 @@
 function startup()
-    % Get the root directory
+    % Get root directory
     root_dir = fileparts(mfilename('fullpath'));
     fprintf('Root directory: %s\n', root_dir);
-    
+
     % Add model paths
     addpath(genpath(fullfile(root_dir, 'steady_state')));
     addpath(genpath(fullfile(root_dir, 'simulations')));
     addpath(genpath(fullfile(root_dir, 'results')));
-    
-    % Add Dynare path for macOS (Homebrew installation)
-    dynare_path = '/opt/homebrew/opt/dynare/lib/dynare/matlab';
-    
-    % Check if Dynare path exists
-    if ~exist(dynare_path, 'dir')
-        error(['Dynare not found in ' dynare_path '. Please check installation.']);
+
+    % Add Dynare paths
+    dynare_paths = {
+        './dynare-6.0/matlab',
+        './dynare-6.0/lib/dynare/mex/matlab',
+
+    };
+
+    % Add paths if they exist
+    for i = 1:length(dynare_paths)
+        if exist(dynare_paths{i}, 'dir')
+            addpath(dynare_paths{i});
+        end
     end
-    
-    % Add Dynare to path
-    addpath(dynare_path);
-    
+
     % Try to initialize Dynare
     try
         dynare_config();
@@ -27,15 +30,7 @@ function startup()
         fprintf('Error initializing Dynare: %s\n', ME.message);
         rethrow(ME);
     end
-    
+
     % Print configuration information
     fprintf('Project paths initialized.\n');
-    fprintf('Dynare path: %s\n', dynare_path);
-    
-    % Verify Dynare is properly added to path
-    if exist('dynare', 'file')
-        fprintf('Dynare found in MATLAB path.\n');
-    else
-        warning('Dynare not found in MATLAB path after initialization.');
-    end
 end
